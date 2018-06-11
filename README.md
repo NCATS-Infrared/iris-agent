@@ -58,7 +58,7 @@ Install and run the Python components:
 Install and run the Javascript components. If you do not already have webpack, run `npm install webpack -g`:
 
     cd iris-agent
-    npm install
+    npm install --python=python2.7
     # build JS app with webpack (can also run webpack --watch in seperate command window)
     webpack
     # start electron (this will open the application automatically)
