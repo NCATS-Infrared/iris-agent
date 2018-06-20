@@ -13,9 +13,9 @@ from iris import iris_objects
 from user_functions.API import SmartAPI
 
 class ListAllKnowledgeSources(IrisCommand):
-    title = "What are all knowledge sources in SmartAPI?"
-    examples = ["What are all knowledge sources available?",
-                "What available data sources are there?",
+    title = "What knowledge sources are available in SmartAPI?"
+    examples = ["What knowledge sources available?",
+                "What databases are available?",
                 "What resources are available?"]
 
 

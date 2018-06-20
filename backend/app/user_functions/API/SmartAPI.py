@@ -44,6 +44,19 @@ class SmartAPI:
         return titles
 
     @staticmethod
+    def search_tags(search_term):
+        result = SmartAPI.query(search_term, field='tags.name')
+        titles = []
+        for r in result:
+            if r == 'hits':
+                #for h in result[r]:
+                #     print(h)
+                #print(result[r]['info']['title'])
+                for h in result[r]:
+                    titles.append(h['info']['title'])
+        return titles
+
+    @staticmethod
     def search_all(search_term):
         result = SmartAPI.query(search_term)
         titles = []
