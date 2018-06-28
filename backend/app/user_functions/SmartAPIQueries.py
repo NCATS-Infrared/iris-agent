@@ -77,12 +77,25 @@ class SearchKnowledgeSourceFull(IrisCommand):
 
     def command(self, query):
         s = SmartAPI.SmartAPI()
-        result = s.search_all(query)
+        result = s.search_tags(query)
         return result
 
     def explanation(self, result):
         if len(result)> 0:
-            return result
+            processed_result = []
+            for r in result:
+                text = r['title'] 
+                if r['description'] != 'Missing':
+                    text += "\n\nDescription: " + r['description']
+                text += "\n\nTags: "
+                tags = r['tags']
+                for i in range(len(tags)):
+                    if i < len(tags) - 1:
+                        text += tags[i] + ", "
+                    else:
+                        text += tags[i]
+                processed_result.append(text)
+            return processed_result
         else:
             return 'No knowledge sources found'
 

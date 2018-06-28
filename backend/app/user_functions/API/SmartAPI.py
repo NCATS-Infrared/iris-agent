@@ -50,7 +50,7 @@ class SmartAPI:
         Return: Titles of matched Smart API Beacons (list)
         Description: Searches SMART APIs for those with tags matching search term.
         """
-        search_term = 'translator,' + search_term
+        search_term = search_term + '&translator'
         result = SmartAPI.query(search_term, field='tags.name')
         titles = []
         for r in result:
