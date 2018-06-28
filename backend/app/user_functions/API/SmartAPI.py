@@ -82,7 +82,7 @@ class SmartAPI:
                 for h in result[r]:
                     for tag in h['tags']:
                         titles.append(tag['name'])
-        return titles
+        return list(set(titles))
 
     #@staticmethod
     #def
