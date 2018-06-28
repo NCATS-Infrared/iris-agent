@@ -45,6 +45,12 @@ class SmartAPI:
 
     @staticmethod
     def search_tags(search_term):
+        """
+        Params: Search Term (string)
+        Return: Titles of matched Smart API Beacons (list)
+        Description: Searches SMART APIs for those with tags matching search term.
+        """
+        search_term = 'translator,' + search_term
         result = SmartAPI.query(search_term, field='tags.name')
         titles = []
         for r in result:
@@ -53,11 +59,23 @@ class SmartAPI:
                 #     print(h)
                 #print(result[r]['info']['title'])
                 for h in result[r]:
-                    titles.append(h['info']['title'])
+                    title = h['info']['title']
+                    try:
+                        description = h['info']['description']
+                    except KeyError:
+                        description = 'Missing'
+                    _id = h['_id']
+                    tags = [i['name'] for i in h['tags'] if i['name'] != 'translator']
+                    titles.append( {'title': title, 'description': description, 'id': _id, 'tags': tags} )
         return titles
 
     @staticmethod
     def search_all(search_term):
+        """
+        Params: Search Term (string)
+        Return: Titles of matched Smart API Beacons (list)
+        Description: Searches all SMART API documentation fields for search term.
+        """
         result = SmartAPI.query(search_term)
         titles = []
         for r in result:
@@ -70,10 +88,16 @@ class SmartAPI:
 
         return titles
 
+
     @staticmethod
     def search_all_tags(search_term='translator'):
+        """
+        Params: None
+        Return: Unique tags in Smart API registry associated with Translator APIs (list)
+        Description: Get a list of unique translator API tags.
+    """
         result = SmartAPI.query(search_term, field='tags.name')
-        titles = []
+        tags = []
         for r in result:
             if r == 'hits':
                 #for h in result[r]:
@@ -81,8 +105,8 @@ class SmartAPI:
                 #print(result[r]['info']['title'])
                 for h in result[r]:
                     for tag in h['tags']:
-                        titles.append(tag['name'])
-        return list(set(titles))
+                        tags.append(tag['name'])
+        return list(set(tags))
 
     #@staticmethod
     #def
@@ -92,7 +116,7 @@ if __name__ == '__main__':
     print(s.search_titles('drug'))
     print(s.search_all('drug'))
     print(s.search_all('*'))
-    print(s.search_all_tags())
+    print(s.search_tags('gene'))
 
 
 
