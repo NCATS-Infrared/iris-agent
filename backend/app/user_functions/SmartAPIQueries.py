@@ -30,6 +30,24 @@ class ListAllKnowledgeSources(IrisCommand):
 
 ListAllKnowledgeSources = ListAllKnowledgeSources()
 
+class ListAllTags(IrisCommand):
+    title = "What kinds of information do you have?"
+    examples = ["What kinds of information are available?",
+                "What type of information is available?",
+                "What tags exist?"]
+
+
+    def command(self):
+        s = SmartAPI.SmartAPI()
+        result = s.search_all_tags()
+        return result
+
+    def explanation(self, result):
+        return result
+
+
+ListAllTags = ListAllTags()
+
 class SearchKnowledgeSourceTitles(IrisCommand):
     title = "What knowledge source titles include {query}?"
     examples = ["What knowledge sources titles contain {query}?"]
