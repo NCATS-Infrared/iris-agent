@@ -70,6 +70,19 @@ class SmartAPI:
 
         return titles
 
+    @staticmethod
+    def search_all_tags(search_term='translator'):
+        result = SmartAPI.query(search_term, field='tags.name')
+        titles = []
+        for r in result:
+            if r == 'hits':
+                #for h in result[r]:
+                #     print(h)
+                #print(result[r]['info']['title'])
+                for h in result[r]:
+                    for tag in h['tags']:
+                        titles.append(tag['name'])
+        return titles
 
     #@staticmethod
     #def
@@ -79,6 +92,7 @@ if __name__ == '__main__':
     print(s.search_titles('drug'))
     print(s.search_all('drug'))
     print(s.search_all('*'))
+    print(s.search_all_tags())
 
 
 
