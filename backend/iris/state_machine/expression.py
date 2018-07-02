@@ -11,6 +11,7 @@ from .. import gencode
 import copy
 import sys
 import inspect
+import re
 
 # the Function class returns a value, as well as a representation of the
 # the program that produced that value
@@ -119,7 +120,13 @@ class Function(Scope, AssignableMachine):
         self.query = text
     # we want to set initial output after title is defined
     def set_output(self):
-        self.output = [{"type":"title", "text": "Sure, I can " + self.title.lower(), "title":self.title.lower()}]
+        has_questionmark = False 
+        if re.search('\?', self.title.lower()) != None:
+            has_questionmark = True
+        if has_questionmark:
+            self.output = [{"type":"title", "text": "Sure, I can answer \"" + self.title.lower() + "\"", "title":self.title.lower()}]
+        else:
+            self.output = [{"type":"title", "text": "Sure, I can \"" + self.title.lower() + "\"", "title":self.title.lower()}]
     # helper to get training examples for this function
     def training_examples(self):
         # TODO: probably just factor this out to IrisCommand (Function objects don't have a class index)

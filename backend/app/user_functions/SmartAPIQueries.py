@@ -71,7 +71,7 @@ SearchKnowledgeSourceTitles = SearchKnowledgeSourceTitles()
 class SearchKnowledgeSourceFull(IrisCommand):
     title = "What knowledge sources include information about {query}?"
     examples = ["What knowledge sources discuss {query}?",
-                "What sources in SmartAPI talk about {query}"]
+                "What sources in SmartAPI talk about {query}?"]
 
     argument_types = {"query": t.String("What is the search term?")}
 
