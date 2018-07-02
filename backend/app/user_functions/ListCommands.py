@@ -5,11 +5,11 @@ from iris import IrisCommand
 class ListCommands(IrisCommand):
 	title = "Show Commands"
 	examples = ["What commands are available?"]
-	def commands(self):
+	def command(self):
 		# cmds = []
 		return "hey"
 	
 	def explanation(self, result):
-		return ["Here are commands you can run ", str(result)]
+		return "Here are commands you can run " + str(result)
 
 ListCommands = ListCommands()
