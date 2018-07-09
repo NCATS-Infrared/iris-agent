@@ -77,7 +77,7 @@ class SearchKnowledgeSourceFull(IrisCommand):
 
     def command(self, query):
         s = SmartAPI.SmartAPI()
-        df_name = 'test'
+        df_name = query
         result = s.search_tags(query)
         result_array = [] # code added for df test
         for r in result:
