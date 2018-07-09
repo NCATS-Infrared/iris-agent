@@ -6,8 +6,7 @@ class ListCommands(IrisCommand):
 	title = "Show Commands"
 	examples = ["What commands are available?"]
 	def command(self):
-		cmd_classes = [ListAllKnowledgeSources, ListAllTags, SearchKnowledgeSourceTitles, 
-		SearchKnowledgeSourceFull]
+		cmd_classes = [ListAllTags, SearchKnowledgeSourceFull]
 		cmds = [i.title for i in cmd_classes]
 		return cmds
 	
