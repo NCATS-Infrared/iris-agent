@@ -77,17 +77,19 @@ class SearchKnowledgeSourceFull(IrisCommand):
 
     def command(self, query):
         s = SmartAPI.SmartAPI()
+        df_name = 'test'
         result = s.search_tags(query)
+        result_array = [] # code added for df test
+        for r in result:
+            result_array.append(r.values()) # code added for df test
+        result_df = iris_objects.IrisDataframe(data=result_array) # code added for df test
+        self.iris.add_to_env(df_name, result_df) # code added for df test
         return result
 
     def explanation(self, result):
-        df_name = 'test'
-
         if len(result)> 0:
             processed_result = []
-            result_array = [] # code added for df test
             for r in result:
-                result_array.append(r.values()) # code added for df test
                 text = r['title'] 
                 if r['description'] != 'Missing':
                     text += "\n\nDescription: " + r['description']
@@ -99,10 +101,6 @@ class SearchKnowledgeSourceFull(IrisCommand):
                     else:
                         text += tags[i]
                 processed_result.append(text)
-
-            result_df = iris_objects.IrisDataframe(data=result_array) # code added for df test
-            self.iris.add_to_env(df_name, result_df) # code added for df test
-
             return processed_result
         else:
             return 'No knowledge sources found'
