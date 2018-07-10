@@ -4,6 +4,7 @@ aiohttp-jinja2==0.12.0
 appnope==0.1.0
 async-timeout==1.1.0
 biopython==1.68
+biothings_client
 bleach==1.5.0
 cffi==1.9.1
 chardet==2.3.0
