@@ -44,6 +44,8 @@ def attributes(x):
         if len(x.columns()) > 7:
             components.append("...")
         return {"value": value, "components": components}
+    elif isinstance(x, list):
+        return {"value": "", "components": x}
     else:
         return {"value": "No information available", "components":[]}
 

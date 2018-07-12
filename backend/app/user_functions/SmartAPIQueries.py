@@ -81,9 +81,9 @@ class SearchKnowledgeSourceFull(IrisCommand):
         result = s.search_tags(query)
         result_array = [] # code added for df test
         for r in result:
-            result_array.append(r.values()) # code added for df test
-        result_df = iris_objects.IrisDataframe(data=result_array) # code added for df test
-        self.iris.add_to_env(df_name, result_df) # code added for df test
+            result_array.append(r['title']) # code added for df test
+        # result_df = iris_objects.IrisDataframe(data=result_array) # code added for df test
+        self.iris.add_to_env(df_name, result_array) # code added for df test
         return result
 
     def explanation(self, result):
@@ -106,3 +106,41 @@ class SearchKnowledgeSourceFull(IrisCommand):
             return 'No knowledge sources found'
 
 SearchKnowledgeSourceFull = SearchKnowledgeSourceFull()
+
+class QueryInformationAboutNode(IrisCommand):
+    title = "Query information about {entity}"
+    examples = ["Give me information about {entity}",
+                "Tell me about {entity}"]
+    argument_types = {
+        "entity": t.EnvVar("What type of entity do you want to know about?"),
+        "index": t.Int("Which knowledge source do you want to use?")
+    }
+
+    def command(self, entity : t.EnvVar, index):
+        if index > 0 and index <= len(entity):
+            self.iris.add_to_env("selected_api", entity[index-1])
+            return entity[index-1]
+        return
+
+    def explanation(self, result):
+        return "Selected: " + result
+
+QueryInformationAboutNode = QueryInformationAboutNode()
+
+class QueryInformationAboutNodeHelper(IrisCommand):
+    title = "What information do you have about {entity_name}?"
+    examples = ["What do you know about {entity_name}?",
+                "What can you tell me about {entity_name}?"]
+
+    argument_types = {"entity_name": t.String("What is the search term?")}
+
+    def command(self, entity_name):
+        s = SmartAPI.SmartAPI()
+        api = self.iris.env["selected_api"].replace(" ", "&")
+        result = s.query_api(api, entity_name)
+        return result
+
+    def explanation(self, result):
+        return result
+
+QueryInformationAboutNodeHelper = QueryInformationAboutNodeHelper()

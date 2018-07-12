@@ -2,6 +2,7 @@ import urllib
 import requests
 import sys
 import pprint
+from biothings_client import get_client
 
 
 class SmartAPI:
@@ -107,6 +108,31 @@ class SmartAPI:
                     for tag in h['tags']:
                         tags.append(tag['name'])
         return list(set(tags))
+
+    @staticmethod
+    def query_api(api, entity):
+        if api == "MyChem.info&API":
+            url = 'http://mychem.info/v1/query?q=' + entity
+            try:
+                res = requests.get(url, timeout=SmartAPI.TIMEOUT_SEC)
+            except requests.exceptions.Timeout:
+                print(url, file=sys.stderr)
+                print('Timeout in for URL: ' + url, file=sys.stderr)
+                return None
+            status_code = res.status_code
+            if status_code != 200:
+                print(url, file=sys.stderr)
+                print('Status code ' + str(status_code) + ' for url: ' + url, file=sys.stderr)
+                return None
+            result = res.json()
+        else:
+            return
+        output = []
+        for r in result:
+            if r == 'hits':
+                h = result[r]
+                output = [i for i in h[0].keys() if not i.startswith('_')]
+        return output
 
     #@staticmethod
     #def
