@@ -1,3 +1,10 @@
+
+# from __future__ import print_function
+# import time
+# import swagger_client
+# from swagger_client.rest import ApiException
+# from pprint import pprint
+
 import urllib
 import requests
 import sys
@@ -30,3 +37,15 @@ class gnbrAPI:
             print('Status code ' + str(status_code) + ' for url: ' + url, file=sys.stderr)
             return None
         return res.json()
+
+
+if __name__ == '__main__':
+	pass
+	# api_instance = swagger_client.ConceptsApi()
+	# concept_id = 'concept_id_example' # str | (url-encoded) CURIE identifier of concept of interest
+
+	# try:
+ #    	api_response = api_instance.get_concept_details(concept_id)
+ #    	pprint(api_response)
+	# except ApiException as e:
+	#     print("Exception when calling ConceptsApi->get_concept_details: %s\n" % e)
