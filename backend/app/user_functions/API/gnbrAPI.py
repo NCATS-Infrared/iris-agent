@@ -10,19 +10,58 @@ For package installation instructions check out the readme at
 https://github.com/NCATS-Infrared/gnbr-client-python
 """
 
-class gnbarAPI():
+class gnbrAPI():
+
+	@staticmethod
+	def concept_types():
+		api_instance = swagger_client.MetadataApi()
+		try:
+			api_response = api_instance.get_concept_types()
+			pprint(api_response)
+			return api_response
+
+		except ApiException as e:
+			print("Exception when calling MetadataApi->get_concept_types: %s\n" % e)
+
+	@staticmethod
+	def predicates():
+		api_instance = swagger_client.MetadataApi()
+		try:
+			api_response = api_instance.get_predicates()
+			pprint(api_response)
+			return api_response
+
+		except ApiException as e:
+			print("Exception when calling MetadataApi->get_predicates: %s\n" % e)
+
+	@staticmethod
+	def exact_match(concept_id):
+		api_instance = swagger_client.ConceptsApi()
+		concept_id = concept_id # str | (url-encoded) CURIE identifier of the concept to be matched
+		try:
+			api_response = api_instance.get_exact_matches_to_concept(concept_id)
+			pprint(api_response)
+			return api_response
+
+		except ApiException as e:
+			print("Exception when calling ConceptsApi->get_exact_matches_to_concept: %s\n" % e)
 
 	@staticmethod
 	def concept_detail(concept_id):
 		"""
 		# concept_id # str | a [CURIE-encoded](https://www.w3.org/TR/curie/) identifier to the beacon. Unknown CURIES should simply be ignored (silent match failure). 
 		"""
+		concept_id=concept_id
 		api_instance = swagger_client.ConceptsApi()
 		try:
 			api_response = api_instance.get_concept_details(concept_id)
 			pprint(api_response)
+			return api_response
+
 		except ApiException as e:
 			print("Exception when calling ConceptsApi->get_concept_details: %s\n" % e)
+ 
+
 
 	@staticmethod
 	def concept(keywords=None, types=None, page_number = 56, page_size = 56):
@@ -39,6 +78,8 @@ class gnbarAPI():
 		try:
 		    api_response = api_instance.get_concepts(keywords, types=types, page_number=page_number, page_size=page_size)
 		    pprint(api_response)
+		    return api_response
+
 		except ApiException as e:
 		    print("Exception when calling ConceptsApi->get_concepts: %s\n" % e)
 
@@ -60,6 +101,8 @@ class gnbarAPI():
 		try:
 		    api_response = api_instance.get_statements(s, relations=relations, t=t, keywords=keywords, types=types, page_number=page_number, page_size=page_size)
 		    pprint(api_response)
+		    return api_response
+
 		except ApiException as e:
 		    print("Exception when calling StatementsApi->get_statements: %s\n" % e)
 
@@ -76,34 +119,47 @@ class gnbarAPI():
 		try:
 		    api_response = api_instance.get_evidence(statement_id, keywords=keywords, page_number=page_number, page_size=page_size)
 		    pprint(api_response)
+		    return api_response
+
 		except ApiException as e:
 		    print("Exception when calling StatementsApi->get_evidence: %s\n" % e)
 
 if __name__ == '__main__':
 
-####	Evidence Test
 	start = time.time()
-	gnbarAPI.evidence(statement_id='MESH:D013575|ncbigene:6331|t', keywords=None)
+	gnbrAPI.concept_types()
 	end = time.time()
 	print(end - start)
 
-####	# Statement Test
 	start = time.time()
-	gnbarAPI.statement(s=['MESH:D013575'], relations='t', t=[])
+	gnbrAPI.predicates()
 	end = time.time()
 	print(end - start)
 
 
+# ####	Evidence Test
+# 	start = time.time()
+# 	gnbrAPI.evidence(statement_id='MESH:D013575|ncbigene:6331|t', keywords=None)
+# 	end = time.time()
+# 	print(end - start)
 
-####	Concept Test
-	start = time.time()
-	gnbarAPI.concept(keywords='syncope',types='Disease' )
-	end = time.time()
-	print(end - start)
+# ####	# Statement Test
+# 	start = time.time()
+# 	gnbrAPI.statement(s=['MESH:D013575'], relations='t', t=[])
+# 	end = time.time()
+# 	print(end - start)
 
-####	Concept Detail Test
-	start = time.time()
-	gnbarAPI.concept_detail('MESH:D005355')
-	end = time.time()
-	print(end - start)
+
+
+# ####	Concept Test
+# 	start = time.time()
+# 	gnbrAPI.concept(keywords='syncope',types='Disease' )
+# 	end = time.time()
+# 	print(end - start)
+
+# ####	Concept Detail Test
+# 	start = time.time()
+# 	gnbarAPI.concept_detail('MESH:D005355')
+# 	end = time.time()
+# 	print(end - start)
 
