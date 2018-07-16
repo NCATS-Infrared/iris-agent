@@ -116,7 +116,7 @@ describing {:,} connections between {:,} diseases, {:,} chemicals, \
 and {:,} genes."""
 		formatted_text = text.format(
 			result['Sentence'],
-			result['Document'], 
+			100,# result['Document'], 
 			result['Chemical|Disease'] + 
 			result['Chemical|Gene'] + 
 			result['Disease|Gene'] + 
