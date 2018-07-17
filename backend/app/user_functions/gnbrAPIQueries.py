@@ -229,7 +229,7 @@ class GetTypesRelatedToConcept(IrisCommand):
 			type_name = (r.object.type).replace('Entity','').strip(',')
 			if type_name == types:
 				processed_result.append(r.object.name)
-		return processed_result
+		return processed_result[:3]
 
 	def explanation(self, result):
 		if len(result) > 0:
@@ -253,15 +253,15 @@ class GetRelationshipBwnConcepts(IrisCommand):
 
 	def command(self, concept1, concept2):
 		g = gnbrAPI.gnbrAPI()
-		result = g.statement(concept1, t=concept2)
-		return result
+		result = g.statement(s=[concept1], relations="", t=[concept2])
+		processed_result = []
+		for r in result:
+			processed_result.append(r.predicate.name)
+		return processed_result
 
 	def explanation(self, result):
 		if len(result) > 0:
-			processed_result = []
-			for r in result:
-				processed_result.append(r.predicate.name)
-			return processed_result
+			return result
 		else:
 			return "No relationships found"
 
@@ -303,15 +303,20 @@ class GetAllRelationships(IrisCommand):
 
 	def command(self, concept_id):
 		g = gnbrAPI.gnbrAPI()
-		result = g.statement(concept_id)
-		return result
+		result = g.statement(s=[concept_id], relations="")
+		processed_result = []
+		for r in result:
+			processed_result.append(r.predicate.name)
+		return processed_result
 
 	def explanation(self, result):
 		if len(result) > 0:
-			processed_result = []
-			for r in result:
-				processed_result.append(r.predicate.name)
-			return processed_result
+			text = ""
+			num_results = Counter(result)
+			sum_results = sum(num_results.values())
+			for key in num_results.keys():
+				text += key + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
+			return text
 		else:
 			return "No relationships found"
 
