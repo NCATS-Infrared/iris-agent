@@ -24,9 +24,9 @@ class LoadGNBR(IrisCommand):
 
 	argument_types = {
 	"new_user":t.Select(question="""Hi! I am the biomedical translator \
-an AI system for exploring connections between ideas in research articles.
+		an AI system for exploring connections between ideas in research articles.
 
-Are you first time user?""", 
+		Are you first time user?""", 
 		options={"Yes":True, 'No':False})
 	}
 
@@ -43,9 +43,9 @@ Are you first time user?""",
 	def explanation(self, result):
 		if result:
 			text ="""Awesome!  I'm going to walk you through a \
-few commands to show you what I can do.
+					few commands to show you what I can do.
 
-Enter 'translator types' into the command line."""	
+					Enter 'translator types' into the command line."""	
 		else:
 			text="""Great to have you back!"""	
 
@@ -112,8 +112,8 @@ class TypesGNBR(IrisCommand):
 	# each element of the list defines a separate chat bubble
 	def explanation(self, result):
 		text = """I have {:,} sentences from {:,} journal articles \
-describing {:,} connections between {:,} diseases, {:,} chemicals, \
-and {:,} genes."""
+				describing {:,} connections between {:,} diseases, {:,} chemicals, \
+				and {:,} genes."""
 		formatted_text = text.format(
 			result['Sentence'],
 			result['Document'], 
@@ -136,14 +136,15 @@ _GNBR_TYPES = TypesGNBR()
 
 class ConceptInfo(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
-	title = "Get info about {concept}"
+	title = "What info do you have about {concept}?"
 
 	# give an example for iris to recognize the command
-	examples = ["Get info aboout concept {concept}"]
+	examples = ["What info exists about {concept}?",
+				"What can you tell me about {concept}?"]
 
 	# type annotations for each command argument, to help Iris collect missing values from a user
 	argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
-    
+	
 	# core logic of the command
 	def command(self, concept_id):
 		api =  gnbrAPI.gnbrAPI()
@@ -159,20 +160,20 @@ class ConceptInfo(IrisCommand):
 	# each element of the list defines a separate chat bubble
 	def explanation(self, result):
 
-		text ="""
-{} ({})
+		text = """
+				{} ({})
 
-I found {:,} mentions.
+				I found {:,} mentions.
 
-{}
+				{}
 
-Most informative sentence:
+				Most informative sentence:
 
-{} [{}]
+				{} [{}]
 
-For more info go to: 
-https://www.n2t.net/{}
-		"""
+				For more info go to: 
+				https://www.n2t.net/{}
+			"""
 		concept = result[0]
 		# concept_type = concept.type.replace('Entity','').strip(',')
 		synonyms = Counter(concept.synonyms)
@@ -187,3 +188,132 @@ https://www.n2t.net/{}
 		return [result]
 
 _GNBR_CONCEPT = ConceptInfo()
+
+
+class GetTypesRelatedToConcept(IrisCommand):
+	title = "Which {types} are related to {concept} by {relationship}?"
+
+	examples = ["What {types} are related to {concept} by {relationship}?"]
+
+	argument_types = {
+						"types": t.Select(question="What is the types term?", options={
+							"diseases": "Disease",
+							"genes": "Gene",
+							"chemicals": "Chemical",
+						}),
+						"concept": t.String("What is the concept term?"),
+						"relationship": t.Select(question="What is the relationship?", options={
+							"regulates": "e rg",
+							"positively_regulates": "v+ e+ w a+",
+							"negatively_regulates": "a- e- n",
+							"directly_interacts_with": "b",
+							"in_pathway_with": "i",
+							"in_complex_with": "h",
+							"in_cell_population_with": "q",
+							"causes_or_contributes_to": "u ud j g",
+							"affects_risk_for": "y",
+							"correlates_with": "l x",
+							"is_therapeutic_target_for": "d",
+							"causes": "sa",
+							"treats": "t c pa te",
+							"prevents": "pr",
+							"has_biomarker": "md mp",
+						}),
+					}
+
+	def command(self, types, concept, relationship):
+		g = gnbrAPI.gnbrAPI()
+		result = g.statement(s=[concept], relations=relationship)
+		processed_result = []
+		for r in result:
+			type_name = (r.object.type).replace('Entity','').strip(',')
+			if type_name == types:
+				processed_result.append(r.object.name)
+		return processed_result
+
+	def explanation(self, result):
+		if len(result) > 0:
+			return result
+		else:
+			return "No results were found"
+
+
+GetTypesRelatedToConcept = GetTypesRelatedToConcept()
+
+class GetRelationshipBwnConcepts(IrisCommand):
+	title = "What relationship exists between {concept1} and {concept2}?"
+
+	examples = ["Is there a relationship between {concept1} and {concept2}?",
+				"How are {concept1} and {concept2} related?"]
+
+	argument_types = {
+						"concept1": t.String("What is the concept1 term?"),
+						"concept2": t.String("What is the concept2 term?"),
+					}
+
+	def command(self, concept1, concept2):
+		g = gnbrAPI.gnbrAPI()
+		result = g.statement(concept1, t=concept2)
+		return result
+
+	def explanation(self, result):
+		if len(result) > 0:
+			processed_result = []
+			for r in result:
+				processed_result.append(r.predicate.name)
+			return processed_result
+		else:
+			return "No relationships found"
+
+
+GetRelationshipBwnConcepts = GetRelationshipBwnConcepts()
+
+class GetEvidence(IrisCommand):
+	title = "What evidence supports this?"
+
+	examples = ["What is the proof?",
+				"How can we prove this?"]
+
+	def command(self):
+		g = gnbrAPI.gnbrAPI()
+		statement_id = self.iris.env['concept1'] + "|" + self.iris.env['concept2']
+		result = g.evidence(statement_id)
+		return result
+
+	def explanation(self, result):
+		if len(result) > 0:
+			processed_result = []
+			for r in result:
+				text = r.label + "\n" + r.id
+				processed_result.append(text)
+				return processed_result
+		else:
+			return 'No evidence found'
+
+
+GetEvidence = GetEvidence()
+
+class GetAllRelationships(IrisCommand):
+	title = "What are all relationships associated with {concept}?"
+
+	examples = ["What relationships does {concept} have?",
+				"Which relationships are associated with {concept}?"]
+
+	argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
+
+	def command(self, concept_id):
+		g = gnbrAPI.gnbrAPI()
+		result = g.statement(concept_id)
+		return result
+
+	def explanation(self, result):
+		if len(result) > 0:
+			processed_result = []
+			for r in result:
+				processed_result.append(r.predicate.name)
+			return processed_result
+		else:
+			return "No relationships found"
+
+
+GetAllRelationships = GetAllRelationships()
