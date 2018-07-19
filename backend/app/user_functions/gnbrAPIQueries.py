@@ -154,8 +154,6 @@ class ConceptInfo(IrisCommand):
 		cid = concept_id
 		# if ':' in concept_id:
 		result = api.concept_detail(concept_id=cid)
-		# else:
-			# result = api.concept(keywords=concept_id)
 		return result
 
 	# wrap the output of a command to display to user
@@ -176,8 +174,7 @@ Most informative sentence:
 
 For more info go to: 
 https://www.n2t.net/{}
-				"""
-
+			"""
 		concept = result[0]
 		# concept_type = concept.type.replace('Entity','').strip(',')
 		synonyms = Counter(concept.synonyms)
@@ -189,6 +186,8 @@ https://www.n2t.net/{}
 		sentence = concept.details[0].value
 		pmid = concept.details[0].tag
 		result = text.format(concept.id, name, num_mentions, syns, sentence, pmid, concept.id)
+		# add name to environment
+		self.iris.add_to_env(name, concept.id)
 		return [result]
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -368,6 +367,7 @@ class GetAllRelationships(IrisCommand):
 			print(processed_result)
 		return processed_result
 
+	def explanation(self, result):
 		if len(result) > 0:
 			# num_results = Counter(result)
 			# sum_results = sum(num_results.values())
