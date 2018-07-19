@@ -153,28 +153,40 @@ class ConceptInfo(IrisCommand):
 		api =  gnbrAPI.gnbrAPI()
 		cid = concept_id
 		# if ':' in concept_id:
-		result = api.concept_detail(concept_id=cid)
-		return result
+		concept_result = api.concept_detail(concept_id=cid)
+		statement_result = api.statement(s=[cid], relations="")
+		combined_result = [concept_result[0]]
+		for r in statement_result:
+			if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
+				strings = (r.object.type, r.predicate.name, r.subject.name)
+				combined_result.append((r.object.type, r.predicate.name, r.subject.name))
+				self.iris.add_to_env(' '.join(strings), 
+					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+
+			else:
+				strings = (r.subject.name, r.predicate.name, r.object.type)
+				combined_result.append((r.subject.name, r.predicate.name, r.object.type))
+				self.iris.add_to_env(' '.join(strings), 
+					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+		return combined_result
 
 	# wrap the output of a command to display to user
 	# by default this will be an identity function
 	# each element of the list defines a separate chat bubble
 	def explanation(self, result):
 
-		text = """
+		mentions_text = """
 {} ({})
 
 I found {:,} mentions.
 
 {}
-
-Most informative sentence:
-
-{} [{}]
+			"""
+		additionalinfo_text = """
 
 For more info go to: 
 https://www.n2t.net/{}
-			"""
+		"""
 		concept = result[0]
 		# concept_type = concept.type.replace('Entity','').strip(',')
 		synonyms = Counter(concept.synonyms)
@@ -183,18 +195,39 @@ https://www.n2t.net/{}
 		name = most_common[0][0]
 		syns = ['{}: {:.0%}'.format(syn, count/num_mentions) for syn, count in most_common]
 		syns = '\n'.join(syns)
-		sentence = concept.details[0].value
+		# sentence = concept.details[0].value
 		pmid = concept.details[0].tag
-		result = text.format(concept.id, name, num_mentions, syns, sentence, pmid, concept.id)
+		# result = text.format(concept.id, name, num_mentions, syns, sentence, pmid, concept.id)
+		mentions_text = mentions_text.format(concept.id, name, num_mentions, syns)
+
+		if len(result) > 1:
+			# num_results = Counter(result)
+			# sum_results = sum(num_results.values())
+			statement_info = Counter(result[1:]).most_common() # sort by count
+			statements_text = ["\nRelationships to other entities:\n"]
+			for r in statement_info:
+				# r[0][0] = r[0][0].replace('Entity','').strip(',')
+				statement = r[0]
+				subj = statement[0].replace('Entity','').strip(',').lower()
+				predicate = statement[1].replace('_',' ')
+				obj = statement[2].replace('Entity','').strip(',').lower()
+				count = r[1]
+				formatted_result = "{} {} {} {}s ".format(subj, predicate, count, obj)
+				statements_text.append(formatted_result)
+			statements_text = '\n'.join(statements_text)
+
+			# text += ' '.join(key).replace('_',' ') + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
+			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
+
 		# add name to environment
 		self.iris.add_to_env(name, concept.id)
-		return [result]
+		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
 
 
 class GetTypesRelatedToConcept(IrisCommand):
-	title = "Workflow three concept_statement info {type_of_relationship}?"
+	title = "Workflow two concept_statement info {type_of_relationship}?"
 
 	examples = ["What {type_of_relationship}?"]
 	argument_types = {"args": t.EnvVar(question="What is the types term?")}
@@ -338,59 +371,59 @@ class GetEvidence(IrisCommand):
 
 GetEvidence = GetEvidence()
 
-class GetAllRelationships(IrisCommand):
-	title = "Workflow two type_statement {concept}?"
+# class GetAllRelationships(IrisCommand):
+# 	title = "Workflow two type_statement {concept}?"
 
-	examples = ["What relationships does {concept} have?",
-				"Which relationships are associated with {concept}?"]
+# 	examples = ["What relationships does {concept} have?",
+# 				"Which relationships are associated with {concept}?"]
 
-	argument_types = {"concept_id":t.EnvVar("About who?")}
-	# argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
+# 	argument_types = {"concept_id":t.EnvVar("About who?")}
+# 	# argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
 
-	def command(self, concept_id):
-		g = gnbrAPI.gnbrAPI()
-		result = g.statement(s=[concept_id], relations="")
-		processed_result = []
-		for r in result:
-			if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
-				strings = (r.object.type, r.predicate.name, r.subject.name)
-				processed_result.append((r.object.type, r.predicate.name, r.subject.name))
-				self.iris.add_to_env(' '.join(strings), 
-					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+# 	def command(self, concept_id):
+# 		g = gnbrAPI.gnbrAPI()
+# 		result = g.statement(s=[concept_id], relations="")
+# 		processed_result = []
+# 		for r in result:
+# 			if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
+# 				strings = (r.object.type, r.predicate.name, r.subject.name)
+# 				processed_result.append((r.object.type, r.predicate.name, r.subject.name))
+# 				self.iris.add_to_env(' '.join(strings), 
+# 					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
 
-			else:
-				strings = (r.subject.name, r.predicate.name, r.object.type)
-				processed_result.append((r.subject.name, r.predicate.name, r.object.type))
-				self.iris.add_to_env(' '.join(strings), 
-					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+# 			else:
+# 				strings = (r.subject.name, r.predicate.name, r.object.type)
+# 				processed_result.append((r.subject.name, r.predicate.name, r.object.type))
+# 				self.iris.add_to_env(' '.join(strings), 
+# 					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
 
-			print(processed_result)
-		return processed_result
+# 			print(processed_result)
+# 		return processed_result
 
-	def explanation(self, result):
-		if len(result) > 0:
-			# num_results = Counter(result)
-			# sum_results = sum(num_results.values())
-			results = Counter(result).most_common() # sort by count
-			text = ["Here's what they're saying about:\n"]
-			for r in results:
-				# r[0][0] = r[0][0].replace('Entity','').strip(',')
-				statement = r[0]
-				subj = statement[0].replace('Entity','').strip(',').lower()
-				predicate = statement[1].replace('_',' ')
-				obj = statement[2].replace('Entity','').strip(',').lower()
-				count = r[1]
-				formatted_result = "{} {} {} {}s ".format(subj, predicate, count, obj)
-				text.append(formatted_result)
-			text = '\n'.join(text)
+# 	def explanation(self, result):
+# 		if len(result) > 0:
+# 			# num_results = Counter(result)
+# 			# sum_results = sum(num_results.values())
+# 			results = Counter(result).most_common() # sort by count
+# 			text = ["Here's what they're saying about:\n"]
+# 			for r in results:
+# 				# r[0][0] = r[0][0].replace('Entity','').strip(',')
+# 				statement = r[0]
+# 				subj = statement[0].replace('Entity','').strip(',').lower()
+# 				predicate = statement[1].replace('_',' ')
+# 				obj = statement[2].replace('Entity','').strip(',').lower()
+# 				count = r[1]
+# 				formatted_result = "{} {} {} {}s ".format(subj, predicate, count, obj)
+# 				text.append(formatted_result)
+# 			text = '\n'.join(text)
 
-				# text += ' '.join(key).replace('_',' ') + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
-			return text
-		else:
-			return "No relationships found"
+# 				# text += ' '.join(key).replace('_',' ') + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
+# 			return text
+# 		else:
+# 			return "No relationships found"
 
 
-GetAllRelationships = GetAllRelationships()
+# GetAllRelationships = GetAllRelationships()
 
 
 class StatementInfo(IrisCommand):
