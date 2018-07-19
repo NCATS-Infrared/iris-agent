@@ -4,12 +4,15 @@ Commands to perform basic queries in gnbrAPI
 from iris import state_types as t
 from iris import IrisCommand
 
+
 from iris import state_machine as sm
 from iris import util as util
 from iris import iris_objects
 from collections import Counter
 from user_functions.API import gnbrAPI
- 
+import pandas as pd
+from collections import Counter
+import numpy as np
 
 class LoadGNBR(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
@@ -136,11 +139,11 @@ _GNBR_TYPES = TypesGNBR()
 
 class ConceptInfo(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
-	title = "What info do you have about {concept}?"
+	title = "What info do you have about {concept_id}?"
 
 	# give an example for iris to recognize the command
-	examples = ["What info exists about {concept}?",
-				"What can you tell me about {concept}?"]
+	examples = ["What info exists about {concept_id}?",
+				"What can you tell me about {concept_id}?"]
 
 	# type annotations for each command argument, to help Iris collect missing values from a user
 	argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
@@ -322,3 +325,160 @@ class GetAllRelationships(IrisCommand):
 
 
 GetAllRelationships = GetAllRelationships()
+
+
+class StatementInfo(IrisCommand):
+	# what iris will call the command + how it will appear in a hint
+	title = "Get info about {statement_id}"
+
+	# give an example for iris to recognize the command
+	examples = ["Get info about {statement_id}", "get info about statement"]
+
+	# type annotations for each command argument, to help Iris collect missing values from a user
+	argument_types = {"statement_id":t.String("I need an id (ex. MESH:D013575).")}
+    
+	# core logic of the command
+	def command(self, statement_id):
+		# api =  gnbrAPI.gnbrAPI()
+		# if ':' in concept_id:
+		#### TODO: currently returns all types of entities, need  the ability to return 
+		# result = gnbrAPI.gnbrAPI.statement(s=[statement_id], relations='t y')
+		if statement_id[:4].lower() == "mesh":
+			statement_id = statement_id.upper()
+		result = gnbrAPI.gnbrAPI.statement(s=[statement_id])
+		# else:
+			# result = api.concept(keywords=concept_id)
+		return statement_id, result
+
+	# wrap the output of a command to display to user
+	# by default this will be an identity function
+	# each element of the list defines a separate chat bubble
+	def explanation(self, results):
+
+
+		statement_id = results[0]
+		statement_id_minus_mesh = statement_id.split(':')[-1]
+		result = results[1] 
+		# list of statements (dictionaries with key id (value str), object (value dict with id, name and type), predicate (value dict with id (curie) and name), subject (dictionary with id, name and type)
+		# example statement
+		# {'id': 'MESH:D013575|MESH:D000255|t',
+		# 'object': {'id': 'MESH:D000255',
+		#            'name': 'adenosinetriphosphate',
+		#            'type': 'Chemical,Entity'},
+		# 'predicate': {'id': 'curie', 'name': 'treats'},
+		# 'subject': {'id': 'MESH:D013575',
+		#             'name': 'syncopal_episode',
+		#             'type': 'Entity,Disease'}}
+		num_results = len(result)
+		statements = []
+		statements_header = ["object id", "object name", "object type", "predicate name", "subject id", "subject name", "subject type"]
+		for statement in result:
+			object_id = statement.object.id
+			object_name = statement.object.name
+			object_type = statement.object.type.replace('Entity','').strip(',')
+			predicate_name = statement.id.split('|')[-1] + ':' + statement.predicate.name
+			subject_id = statement.subject.id
+			subject_name = statement.subject.name
+			subject_type = statement.subject.type.replace('Entity','').strip(',')
+			statements.append([object_id, object_name, object_type, predicate_name, subject_id, subject_name, subject_type])
+
+		if len(statements)>0:
+			statements_pd = pd.DataFrame(statements, columns=statements_header)
+			statements_object = iris_objects.IrisDataframe(data=statements_pd)
+			statements_name = 'statements_' + statement_id_minus_mesh
+			self.iris.add_to_env(statements_name, statements_object)
+
+			explanation = ['Total of ' + str(num_results) + ' results. See table: ' + statements_name + " for more info", statements_object]
+		else:
+			explanation = [statement_id + ' not found.']
+		return explanation
+
+_GNBR_STATEMENT = StatementInfo()
+
+
+class StatementSimilarity(IrisCommand):
+	# what iris will call the command + how it will appear in a hint
+	title = "Get the similarity between {statement1_id} and {statement2_id} (Jaccard) "
+
+	# give an example for iris to recognize the command
+	examples = ["Get the similarity between {statement1_id} and {statement2_id}", "Jaccard", "similarity statements", "how similar are {statement1_id} and {statement2_id}"]
+
+	# type annotations for each command argument, to help Iris collect missing values from a user
+	argument_types = {"statement1_id":t.String("I need an id (ex. ncbigene:7018)"), 
+					"statement2_id":t.String("I need another id (ex. ncbigene:4609)")}
+    
+	# core logic of the command
+	def command(self, statement1_id, statement2_id):
+		# api =  gnbrAPI.gnbrAPI()
+		# if ':' in concept_id:
+		#### TODO: currently returns all types of entities, need  the ability to return 
+		# result = gnbrAPI.gnbrAPI.statement(s=[statement_id], relations='t y')
+		if statement1_id[:4].lower() == "mesh":
+			statement1_id = statement1_id.upper()
+		if statement2_id[:4].lower() == "mesh":
+			statement2_id = statement2_id.upper()
+
+		result1 = gnbrAPI.gnbrAPI.statement(s=[statement1_id])
+		result2 = gnbrAPI.gnbrAPI.statement(s=[statement2_id])
+		# else:
+			# result = api.concept(keywords=concept_id)
+		return statement1_id, result1, statement2_id, result2
+
+	# wrap the output of a command to display to user
+	# by default this will be an identity function
+	# each element of the list defines a separate chat bubble
+	def explanation(self, results):
+
+		statement1_id, result1, statement2_id, result2 = results
+
+		# list of statements (dictionaries with key id (value str), object (value dict with id, name and type), predicate (value dict with id (curie) and name), subject (dictionary with id, name and type)
+		# example statement
+		# {'id': 'MESH:D013575|MESH:D000255|t',
+		# 'object': {'id': 'MESH:D000255',
+		#            'name': 'adenosinetriphosphate',
+		#            'type': 'Chemical,Entity'},
+		# 'predicate': {'id': 'curie', 'name': 'treats'},
+		# 'subject': {'id': 'MESH:D013575',
+		#             'name': 'syncopal_episode',
+		#             'typeresult': 'Entity,Disease'}}
+		statements1, statements2 = set(), set()
+		for statement in result1:
+			object_id = statement.object.id
+			subject_id = statement.subject.id
+			statements1.add(object_id)
+			statements1.add(subject_id)
+
+		for statement in result2:
+			object_id = statement.object.id
+			subject_id = statement.subject.id
+			statements2.add(object_id)
+			statements2.add(subject_id)
+
+
+
+		# compute Jaccard similarity 
+		intersection_cardinality = len(set.intersection(*[set(statements1), set(statements2)]))
+		union_cardinality = len(set.union(*[set(statements1), set(statements2)]))
+		if union_cardinality>0:
+			jaccard_similarity = intersection_cardinality/float(union_cardinality)
+		else:
+			jaccard_similarity = 0
+		self.iris.add_to_env("jaccard-" + statement1_id + "-" + statement2_id, jaccard_similarity)
+		print(statement1_id, len(statements1))
+		print(statement2_id, len(statements2))
+		print(intersection_cardinality, 'intersection', union_cardinality, 'union')
+
+		text = """
+The Jaccard similarity between 
+{} ({:,} total neighbors) 
+and 
+{} ({:,} total neighbors) is: 
+{:,} [intersection] / {:,} [union] = {:.3f} [Jaccard] 
+		"""
+		explanation = text.format(statement1_id, len(statements1), statement2_id, len(statements2), intersection_cardinality, union_cardinality, jaccard_similarity)
+
+		return [explanation]
+
+_GNBR_STATEMENT_SIMILARITY = StatementSimilarity()
+
+

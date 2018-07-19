@@ -84,7 +84,7 @@ class gnbrAPI():
 		    print("Exception when calling ConceptsApi->get_concepts: %s\n" % e)
 
 	@staticmethod
-	def statement(s, relations=None, t=None, keywords=None, types=None, page_number = 56, page_size = 56):
+	def statement(s, relations=None, t=[], keywords=None, types=None, page_number = 56, page_size = 56):
 		"""
 		# s # list[str] | a set of [CURIE-encoded](https://www.w3.org/TR/curie/) identifiers of  'source' concepts possibly known to the beacon. Unknown CURIES should simply be ignored (silent match failure). 
 		# relations # str | a (url-encoded, space-delimited) string of predicate relation identifiers with which to constrain the statement relations retrieved  for the given query seed concept. The predicate ids sent should  be as published by the beacon-aggregator by the /predicates API endpoint.  (optional)
@@ -99,12 +99,14 @@ class gnbrAPI():
 		# create an instance of the API class
 		api_instance = swagger_client.StatementsApi()
 		try:
-		    api_response = api_instance.get_statements(s, relations=relations, t=t, keywords=keywords, types=types, page_number=page_number, page_size=page_size)
-		    pprint(api_response)
-		    return api_response
+			if relations is None:
+				relations = "e rg v+ e+ w a+ a- e- n b i h q u ud j g y l x d sa t c pa te pr md mp"
+			api_response = api_instance.get_statements(s, relations=relations, t=t, keywords=keywords, types=types, page_number=page_number, page_size=page_size)
+			pprint(api_response)
+			return api_response
 
 		except ApiException as e:
-		    print("Exception when calling StatementsApi->get_statements: %s\n" % e)
+			print("Exception when calling StatementsApi->get_statements: %s\n" % e)
 
 	@staticmethod
 	def evidence(statement_id, keywords, page_number = 56, page_size = 56):
@@ -118,48 +120,44 @@ class gnbrAPI():
 		api_instance = swagger_client.StatementsApi()
 		try:
 		    api_response = api_instance.get_evidence(statement_id, keywords=keywords, page_number=page_number, page_size=page_size)
-		    pprint(api_response)
+		    # pprint(api_response)
 		    return api_response
 
 		except ApiException as e:
 		    print("Exception when calling StatementsApi->get_evidence: %s\n" % e)
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-	start = time.time()
-	gnbrAPI.concept_types()
-	end = time.time()
-	print(end - start)
-
-	start = time.time()
-	gnbrAPI.predicates()
-	end = time.time()
-	print(end - start)
-
-
-# ####	Evidence Test
 # 	start = time.time()
-# 	gnbrAPI.evidence(statement_id='MESH:D013575|ncbigene:6331|t', keywords=None)
+# 	gnbrAPI.concept_types()
 # 	end = time.time()
 # 	print(end - start)
 
-# ####	# Statement Test
 # 	start = time.time()
-# 	gnbrAPI.statement(s=['MESH:D013575'], relations='t', t=[])
+# 	gnbrAPI.predicates()
 # 	end = time.time()
 # 	print(end - start)
+# 
+	####	Evidence Test
+	# start = time.time()
+	# gnbrAPI.evidence(statement_id='MESH:D013575|ncbigene:6331|t', keywords=None)
+	# end = time.time()
+	# print(end - start)
 
+	#### Statement Test
+	# start = time.time()
+	# gnbrAPI.statement(s=['MESH:D013575'], relations='t')
+	# end = time.time()
+	# print(end - start)
 
+	####	Concept Test
+	# start = time.time()
+	# gnbrAPI.concept(keywords='syncope',types='Disease' )
+	# end = time.time()
+	# print(end - start)
 
-# ####	Concept Test
-# 	start = time.time()
-# 	gnbrAPI.concept(keywords='syncope',types='Disease' )
-# 	end = time.time()
-# 	print(end - start)
-
-# ####	Concept Detail Test
-# 	start = time.time()
-# 	gnbarAPI.concept_detail('MESH:D005355')
-# 	end = time.time()
-# 	print(end - start)
-
+	####	Concept Detail Test
+	# start = time.time()
+	# gnbarAPI.concept_detail('MESH:D005355')
+	# end = time.time()
+	# print(end - start)
