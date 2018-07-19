@@ -139,7 +139,7 @@ _GNBR_TYPES = TypesGNBR()
 
 class ConceptInfo(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
-	title = "What info do you have about {concept_id}?"
+	title = "Workflow one concept info {concept_id}?"
 
 	# give an example for iris to recognize the command
 	examples = ["What info exists about {concept_id}?",
@@ -164,19 +164,20 @@ class ConceptInfo(IrisCommand):
 	def explanation(self, result):
 
 		text = """
-				{} ({})
+{} ({})
 
-				I found {:,} mentions.
+I found {:,} mentions.
 
-				{}
+{}
 
-				Most informative sentence:
+Most informative sentence:
 
-				{} [{}]
+{} [{}]
 
-				For more info go to: 
-				https://www.n2t.net/{}
-			"""
+For more info go to: 
+https://www.n2t.net/{}
+				"""
+
 		concept = result[0]
 		# concept_type = concept.type.replace('Entity','').strip(',')
 		synonyms = Counter(concept.synonyms)
@@ -194,6 +195,48 @@ _GNBR_CONCEPT = ConceptInfo()
 
 
 class GetTypesRelatedToConcept(IrisCommand):
+	title = "Workflow three concept_statement info {type_of_relationship}?"
+
+	examples = ["What {type_of_relationship}?"]
+	argument_types = {"args": t.EnvVar(question="What is the types term?")}
+
+	def command(self, args):
+		relation_dict = {
+								"regulates": "e rg",
+								"positively_regulates": "v+ e+ w a+",
+								"negaitvely_regulates": "a- e- n",
+								"directly_interacts_with": "b",
+								"in_pathway_with": "i",
+								"in_complex_with": "h",
+								"in_cell_population_with": "q",
+								"causes_or_contributes_to": "u ud j g",
+								"affects_risk_for": "y",
+								"correlates_with": "l x",
+								"is_therapeutic_target_for": "d",
+								"causes": "sa",
+								"treats": "t c pa te",
+								"prevents": "pr",
+								"has_biomarker": "md mp",
+							}
+		g = gnbrAPI.gnbrAPI()
+		concept = args['concept']
+		relationship = relation_dict[ args['relation'] ]
+		types = args['type']
+		result = g.statement(s=[concept], relations=relationship)
+		processed_result = []
+		for r in result:
+			processed_result.append(r.object.id)
+		return processed_result[:3]
+
+	def explanation(self, result):
+		if len(result) > 0:
+			return result
+		else:
+			return "No results were found"
+
+"""
+Older version do not delete yet!
+
 	title = "Which {types} are related to {concept} by {relationship}?"
 
 	examples = ["What {types} are related to {concept} by {relationship}?"]
@@ -239,7 +282,7 @@ class GetTypesRelatedToConcept(IrisCommand):
 			return result
 		else:
 			return "No results were found"
-
+"""
 
 GetTypesRelatedToConcept = GetTypesRelatedToConcept()
 
@@ -297,7 +340,7 @@ class GetEvidence(IrisCommand):
 GetEvidence = GetEvidence()
 
 class GetAllRelationships(IrisCommand):
-	title = "What are all relationships associated with {concept}?"
+	title = "Workflow two type_statement {concept}?"
 
 	examples = ["What relationships does {concept} have?",
 				"Which relationships are associated with {concept}?"]
