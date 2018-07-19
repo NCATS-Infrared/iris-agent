@@ -302,23 +302,46 @@ class GetAllRelationships(IrisCommand):
 	examples = ["What relationships does {concept} have?",
 				"Which relationships are associated with {concept}?"]
 
-	argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
+	argument_types = {"concept_id":t.EnvVar("About who?")}
+	# argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
 
 	def command(self, concept_id):
 		g = gnbrAPI.gnbrAPI()
 		result = g.statement(s=[concept_id], relations="")
 		processed_result = []
 		for r in result:
-			processed_result.append(r.predicate.name)
+			if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
+				strings = (r.object.type, r.predicate.name, r.subject.name)
+				processed_result.append((r.object.type, r.predicate.name, r.subject.name))
+				self.iris.add_to_env(' '.join(strings), 
+					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+
+			else:
+				strings = (r.subject.name, r.predicate.name, r.object.type)
+				processed_result.append((r.subject.name, r.predicate.name, r.object.type))
+				self.iris.add_to_env(' '.join(strings), 
+					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+
+			print(processed_result)
 		return processed_result
 
-	def explanation(self, result):
 		if len(result) > 0:
-			text = ""
-			num_results = Counter(result)
-			sum_results = sum(num_results.values())
-			for key in num_results.keys():
-				text += key + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
+			# num_results = Counter(result)
+			# sum_results = sum(num_results.values())
+			results = Counter(result).most_common() # sort by count
+			text = ["Here's what they're saying about:\n"]
+			for r in results:
+				# r[0][0] = r[0][0].replace('Entity','').strip(',')
+				statement = r[0]
+				subj = statement[0].replace('Entity','').strip(',').lower()
+				predicate = statement[1].replace('_',' ')
+				obj = statement[2].replace('Entity','').strip(',').lower()
+				count = r[1]
+				formatted_result = "{} {} {} {}s ".format(subj, predicate, count, obj)
+				text.append(formatted_result)
+			text = '\n'.join(text)
+
+				# text += ' '.join(key).replace('_',' ') + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
 			return text
 		else:
 			return "No relationships found"
