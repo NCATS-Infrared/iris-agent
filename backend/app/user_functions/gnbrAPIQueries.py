@@ -600,3 +600,33 @@ and
 _GNBR_STATEMENT_SIMILARITY = StatementSimilarity()
 
 
+class GetSimilarConcepts(IrisCommand):
+	title = "Find things similar to {concept}?"
+
+	examples = ["similarity {}?"]
+
+	argument_types = {"args": t.EnvVar(question="Similar to who?")}
+
+	def command(self):
+		api = gnbrAPI.gnbrAPI()
+		concept_id = args
+		statements = api.statement(s=[concept_id], relations="")
+		source_concept, foafs = set(), set()
+		for stmt in stataments:
+			friend = stmt.object.id
+			source_concept.add(friend)
+			faof_statement = api.statement(s=friend, relations="")
+			foafs.update([i.object.id for i in faof_statement])
+		similarities = {}
+		for f in foafs:
+			foaf_statament = api.statement(s=f, relations="")
+			foaf = set([i.object.id for i in foaf_statament])
+			numerator = len(source_concept & foaf)
+			denominator = len(source_concept | foaf)
+			similarities[f] = float(numerator)/float(denominator)
+
+		return similarities
+
+	def explanation(self, result):
+		return result
+
