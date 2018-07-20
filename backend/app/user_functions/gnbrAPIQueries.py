@@ -236,7 +236,7 @@ class GetTypesRelatedToConcept(IrisCommand):
 		relation_dict = {
 								"regulates": "e rg",
 								"positively_regulates": "v+ e+ w a+",
-								"negaitvely_regulates": "a- e- n",
+								"negatively_regulates": "a- e- n",
 								"directly_interacts_with": "b",
 								"in_pathway_with": "i",
 								"in_complex_with": "h",
@@ -256,9 +256,9 @@ class GetTypesRelatedToConcept(IrisCommand):
 		types = args['type']
 		result = g.statement(s=[concept], relations=relationship)
 		processed_result = []
-		for r in result:
+		for r in result[:3]:
 			processed_result.append(r.object.id)
-		return processed_result[:3]
+		return processed_result
 
 	def explanation(self, result):
 		if len(result) > 0:
@@ -370,6 +370,23 @@ class GetEvidence(IrisCommand):
 
 
 GetEvidence = GetEvidence()
+
+class SelectWorkflow(IrisCommand):
+	title = "Select {workflow}"
+
+	examples = ["Pick {workflow}",
+				"Choose {workflow}"]
+
+	argument_types = {"workflow": t.Select(question="Which workflow would you like to select?", options={
+						"Drug treatments and side effects": "drug_treatment",
+						"Random walk": "random_walk",
+					})}
+
+	def command(self, workflow):
+		self.iris.add_to_env("Workflow", workflow)
+		return "Selected: " + workflow
+
+SelectWorkflow = SelectWorkflow()
 
 # class GetAllRelationships(IrisCommand):
 # 	title = "Workflow two type_statement {concept}?"
