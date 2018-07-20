@@ -109,7 +109,7 @@ class gnbrAPI():
 			print("Exception when calling StatementsApi->get_statements: %s\n" % e)
 
 	@staticmethod
-	def evidence(statement_id, keywords, page_number = 56, page_size = 56):
+	def evidence(statement_id, keywords=None, page_number = 56, page_size = 56):
 		"""
 		# statement_id = 'statement_id_example' # str | (url-encoded) CURIE identifier of the concept-relationship statement (\"assertion\", \"claim\") for which associated evidence is sought 
 		# keywords = 'keywords_example' # str | (url-encoded, space delimited) keyword filter to apply against the label field of the annotation  (optional)

@@ -220,7 +220,7 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		self.iris.add_to_env(name, concept.id)
+		self.iris.add_to_env("concept_id", concept.id)
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -258,6 +258,7 @@ class GetTypesRelatedToConcept(IrisCommand):
 		processed_result = []
 		for r in result[:3]:
 			processed_result.append(r.object.id)
+			self.iris.add_to_env(r.object.id, r.id)
 		return processed_result
 
 	def explanation(self, result):
@@ -347,21 +348,22 @@ class GetRelationshipBwnConcepts(IrisCommand):
 GetRelationshipBwnConcepts = GetRelationshipBwnConcepts()
 
 class GetEvidence(IrisCommand):
-	title = "What evidence supports this?"
+	title = "Get evidence"
 
-	examples = ["What is the proof?",
-				"How can we prove this?"]
+	examples = ["Get sentences",
+				"Show proof"]
 
-	def command(self):
+	argument_types = {"statement_id": t.EnvVar("For which concept id?")}
+
+	def command(self, statement_id):
 		g = gnbrAPI.gnbrAPI()
-		statement_id = self.iris.env['concept1'] + "|" + self.iris.env['concept2']
 		result = g.evidence(statement_id)
 		return result
 
 	def explanation(self, result):
 		if len(result) > 0:
 			processed_result = []
-			for r in result:
+			for r in result[:3]:
 				text = r.label + "\n" + r.id
 				processed_result.append(text)
 				return processed_result
