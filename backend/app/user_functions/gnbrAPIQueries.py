@@ -220,7 +220,7 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		self.iris.add_to_env(name, concept.id)
+		self.iris.add_to_env('concept_id', concept.id)
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -263,6 +263,9 @@ class GetTypesRelatedToConcept(IrisCommand):
 		return processed_result
 
 	def explanation(self, result):
+		text = """
+{} {} senteces
+"""
 		if len(result) > 0:
 			return result
 		else:
