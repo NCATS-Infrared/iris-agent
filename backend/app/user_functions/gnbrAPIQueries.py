@@ -220,7 +220,7 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		self.iris.add_to_env("concept_id", concept.id)
+		self.iris.add_to_env(name, concept.id)
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -258,7 +258,8 @@ class GetTypesRelatedToConcept(IrisCommand):
 		processed_result = []
 		for r in result[:3]:
 			processed_result.append(r.object.id)
-			self.iris.add_to_env(r.object.id, r.id)
+			self.iris.add_to_env(r.id, r.id)
+			self.iris.add_to_env(r.object.name, r.object.id)
 		return processed_result
 
 	def explanation(self, result):
@@ -607,26 +608,32 @@ class GetSimilarConcepts(IrisCommand):
 
 	argument_types = {"args": t.EnvVar(question="Similar to who?")}
 
-	def command(self):
+	def command(self, args):
 		api = gnbrAPI.gnbrAPI()
 		concept_id = args
 		statements = api.statement(s=[concept_id], relations="")
 		source_concept, foafs = set(), set()
-		for stmt in stataments:
+		for stmt in statements:
 			friend = stmt.object.id
 			source_concept.add(friend)
-			faof_statement = api.statement(s=friend, relations="")
-			foafs.update([i.object.id for i in faof_statement])
+			faof_statement = api.statement(s=[friend], relations="")
+			foafs.update(i.object.id for i in faof_statement if i.object.type == i.subject.type)
 		similarities = {}
 		for f in foafs:
-			foaf_statament = api.statement(s=f, relations="")
-			foaf = set([i.object.id for i in foaf_statament])
+			foaf_statement = api.statement(s=[f], relations="")
+			foaf = set([i.object.id for i in foaf_statement])
 			numerator = len(source_concept & foaf)
 			denominator = len(source_concept | foaf)
-			similarities[f] = float(numerator)/float(denominator)
-
+			similarities[f] = 1.0*float(numerator)/(1.0*float(denominator))
 		return similarities
+		sorted_sims = sorted(similarities, key=similarities.get)
+
+		return zip(sorted_sims[:10], similarities[sorted_sims[:10]])
+
+
+
 
 	def explanation(self, result):
 		return result
 
+_GetSimilarConcepts = GetSimilarConcepts()
