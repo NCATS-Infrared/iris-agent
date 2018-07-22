@@ -257,16 +257,19 @@ class GetTypesRelatedToConcept(IrisCommand):
 		result = g.statement(s=[concept], relations=relationship)
 		processed_result = []
 		for r in result[:3]:
-			processed_result.append(r.object.id)
+			processed_result.append((relationship, r.object.name))			
+			# processed_result.append(r.object.id)
 			self.iris.add_to_env(r.id, r.id)
 			self.iris.add_to_env(r.object.name, r.object.id)
 		return processed_result
 
 	def explanation(self, result):
 		text = """
-{} {} senteces
+{}: {} sentences
 """
 		if len(result) > 0:
+			for r in result:
+				txt = '{} {}'.format(r)
 			return result
 		else:
 			return "No results were found"
