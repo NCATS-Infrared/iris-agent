@@ -257,10 +257,10 @@ class GetTypesRelatedToConcept(IrisCommand):
 		result = g.statement(s=[concept], relations=relationship)
 		processed_result = []
 		for r in result[:3]:
-			processed_result.append((relationship, r.object.name))			
+			processed_result.append((r.object.name, r.object.id))			
 			# processed_result.append(r.object.id)
 			self.iris.add_to_env(r.id, r.id)
-			self.iris.add_to_env(r.object.name, r.object.id)
+			self.iris.add_to_env(r.object.name, (r.id, r.object.id))
 		return processed_result
 
 	def explanation(self, result):
@@ -268,9 +268,11 @@ class GetTypesRelatedToConcept(IrisCommand):
 {}: {} sentences
 """
 		if len(result) > 0:
+			processed_result = []
 			for r in result:
-				txt = '{} {}'.format(r)
-			return result
+				txt = '{} ({})'.format(r[0],r[1])
+				processed_result.append(txt)
+			return processed_result
 		else:
 			return "No results were found"
 
@@ -360,11 +362,11 @@ class GetEvidence(IrisCommand):
 	examples = ["Get sentences",
 				"Show proof"]
 
-	argument_types = {"statement_id": t.EnvVar("For which concept id?")}
+	argument_types = {"statement_id": t.EnvVar("For which concept?")}
 
 	def command(self, statement_id):
 		g = gnbrAPI.gnbrAPI()
-		result = g.evidence(statement_id)
+		result = g.evidence(statement_id[0])
 		return result
 
 	def explanation(self, result):
@@ -616,7 +618,7 @@ class GetSimilarConcepts(IrisCommand):
 
 	def command(self, args):
 		api = gnbrAPI.gnbrAPI()
-		concept_id = args
+		concept_id = args[1]
 		statements = api.statement(s=[concept_id], relations="")
 		source_concept, foafs = set(), set()
 		for stmt in statements:
