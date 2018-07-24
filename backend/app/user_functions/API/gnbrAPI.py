@@ -126,37 +126,43 @@ class gnbrAPI():
 		except ApiException as e:
 		    print("Exception when calling StatementsApi->get_evidence: %s\n" % e)
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-# 	start = time.time()
-# 	gnbrAPI.concept_types()
-# 	end = time.time()
-# 	print(end - start)
+	# start = time.time()
+	# gnbrAPI.concept_types()
+	# end = time.time()
+	# print(end - start)
 
-# 	start = time.time()
-# 	gnbrAPI.predicates()
-# 	end = time.time()
-# 	print(end - start)
-# 
-	####	Evidence Test
+	# start = time.time()
+	# gnbrAPI.predicates()
+	# end = time.time()
+	# print(end - start)
+
+	# ###   Exact match test
+	# start = time.time()
+	# gnbrAPI.exact_match(concept_id = 'MESH:D013575')
+	# gnbrAPI.exact_match(concept_id = 'MESH:D000071243')
+	# end = time.time()
+	# print(end - start)
+	# ###	Evidence Test
 	# start = time.time()
 	# gnbrAPI.evidence(statement_id='MESH:D013575|ncbigene:6331|t', keywords=None)
 	# end = time.time()
 	# print(end - start)
 
-	#### Statement Test
+	# ### Statement Test
 	# start = time.time()
 	# gnbrAPI.statement(s=['MESH:D013575'], relations='t')
 	# end = time.time()
 	# print(end - start)
 
-	####	Concept Test
+	# ###	Concept Test
 	# start = time.time()
 	# gnbrAPI.concept(keywords='syncope',types='Disease' )
 	# end = time.time()
 	# print(end - start)
 
-	####	Concept Detail Test
+	# ###	Concept Detail Test
 	# start = time.time()
 	# gnbarAPI.concept_detail('MESH:D005355')
 	# end = time.time()
