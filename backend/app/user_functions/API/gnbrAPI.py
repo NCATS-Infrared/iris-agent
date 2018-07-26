@@ -128,10 +128,10 @@ class gnbrAPI():
 
 if __name__ == '__main__':
 
-	# start = time.time()
-	# gnbrAPI.concept_types()
-	# end = time.time()
-	# print(end - start)
+	start = time.time()
+	gnbrAPI.concept_types()
+	end = time.time()
+	print(end - start)
 
 	# start = time.time()
 	# gnbrAPI.predicates()

@@ -109,6 +109,14 @@ class PrintValue(IrisCommand):
     def command(self, value : t.EnvVar()):
         # if isinstance(value, iris_objects.IrisDataframe):
         #     return value.to_matrix()
+        if isinstance(value, dict):
+            formatted_value = []
+            for key in value.keys():
+                text = key + ":\n"
+                for val in value[key]:
+                    text += val + ", "
+                formatted_value.append(text.strip()[:-1])
+            value = formatted_value
         return value
 
 printValue = PrintValue()

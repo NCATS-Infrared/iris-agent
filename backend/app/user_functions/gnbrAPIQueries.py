@@ -162,7 +162,6 @@ class ConceptInfo(IrisCommand):
 				combined_result.append((r.object.type, r.predicate.name, r.subject.name))
 				self.iris.add_to_env(' '.join(strings), 
 					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
-
 			else:
 				strings = (r.subject.name, r.predicate.name, r.object.type)
 				combined_result.append((r.subject.name, r.predicate.name, r.object.type))
@@ -220,7 +219,13 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		self.iris.add_to_env('concept_id', concept.id)
+		if self.iris.env['Workflow'] == 'treatment_sideeffects':
+			if 'workflow_path' in self.iris.env:
+				self.iris.env['workflow_path'].append(concept.id)
+			else:
+				self.iris.add_to_env('workflow_path', [concept.id])
+			processed_result = [processed_result]
+			processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -251,10 +256,14 @@ class GetTypesRelatedToConcept(IrisCommand):
 								"has_biomarker": "md mp",
 							}
 		g = gnbrAPI.gnbrAPI()
-		concept = args['concept']
+		concept_id = args['concept']
 		relationship = relation_dict[ args['relation'] ]
 		types = args['type']
-		result = g.statement(s=[concept], relations=relationship)
+		if self.iris.env['Workflow'] == 'treatment_sideeffects':
+			self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
+			self.iris.add_to_env('concept_id', concept_id)
+			self.iris.add_to_env('relationship', relationship)				
+		result = g.statement(s=[concept_id], relations=relationship)
 		processed_result = []
 		for r in result[:3]:
 			processed_result.append((r.object.name, r.object.id))			
@@ -272,6 +281,9 @@ class GetTypesRelatedToConcept(IrisCommand):
 			for r in result:
 				txt = '{} ({})'.format(r[0],r[1])
 				processed_result.append(txt)
+			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+				processed_result.append("To save results, enter command 'Save dataset'")
+				processed_result.append("To see evidence, enter command 'get evidence'")
 			return processed_result
 		else:
 			return "No results were found"
@@ -375,7 +387,9 @@ class GetEvidence(IrisCommand):
 			for r in result[:3]:
 				text = r.label + "\n" + r.id
 				processed_result.append(text)
-				return processed_result
+			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+				processed_result.append("To explore another relationship, type in 'Workflow two'")
+			return processed_result
 		else:
 			return 'No evidence found'
 
@@ -389,15 +403,39 @@ class SelectWorkflow(IrisCommand):
 				"Choose {workflow}"]
 
 	argument_types = {"workflow": t.Select(question="Which workflow would you like to select?", options={
-						"Drug treatments and side effects": "drug_treatment",
+						"Disease treatments and side effects": "treatment_sideeffects",
 						"Random walk": "random_walk",
 					})}
 
 	def command(self, workflow):
 		self.iris.add_to_env("Workflow", workflow)
-		return "Selected: " + workflow
+		return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one'"
 
 SelectWorkflow = SelectWorkflow()
+
+class SaveDataset(IrisCommand):
+	title = "Save dataset"
+
+	examples = ["Build dataset",
+				"Store dataset"]
+
+	def command(self):
+		g = gnbrAPI.gnbrAPI()
+		result = g.statement(s=[self.iris.env['concept_id']], relations=self.iris.env['relationship'])
+		relationships = []
+		if len(result) > 0:
+			for r in result:
+				relationships.append(r.object.name)
+			if 'Dataset' in self.iris.env:
+				self.iris.env['Dataset'][self.iris.env['concept_id'] + " | " + r.predicate.name] = relationships
+			else:
+				relationships_dict = {self.iris.env['concept_id'] + " | " + r.predicate.name: relationships}
+				self.iris.add_to_env("Dataset", relationships_dict)
+			return "Saved"
+		else:
+			return "No results to save"
+
+SaveDataset = SaveDataset()
 
 # class GetAllRelationships(IrisCommand):
 # 	title = "Workflow two type_statement {concept}?"
