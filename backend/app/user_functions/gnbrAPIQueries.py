@@ -3,6 +3,7 @@ Commands to perform basic queries in gnbrAPI
 '''
 from iris import state_types as t
 from iris import IrisCommand
+import random
 
 
 from iris import state_machine as sm
@@ -560,6 +561,57 @@ class StatementInfo(IrisCommand):
 
 _GNBR_STATEMENT = StatementInfo()
 
+
+class StatementInfoList(IrisCommand):
+	title = "Get all statements between {list_concept1} and {list_concept2}?"
+
+	examples = ["How are these two lists of concepts related?"]
+
+	argument_types = {"list_concept1":t.List("What concepts (entities) do you want to analyze? (enter identifiers separated by commas)"),
+						"list_concept2":t.List("What concepts (entities) do you want to analyze? (enter identifiers separated by commas)")
+					}
+
+	def command(self, list_concept1, list_concept2):
+		g = gnbrAPI.gnbrAPI()
+
+		result_arr = []
+		for concept1 in list_concept1:
+			for concept2 in list_concept2:
+				print(concept1, concept2)
+				result = g.statement(s=[concept1], relations="", t=[concept2])
+				print(result)
+				if result:
+					for r in result:
+						# result_arr.append([concept1, concept2, r.predicate.name])
+						result_arr.append([r.object.id, r.object.name, r.object.type.replace('Entity','').strip(','), r.predicate.name,
+										 r.subject.id, r.subject.name, r.subject.type.replace('Entity','').strip(',')])
+		return result_arr
+
+	def explanation(self, result):
+
+		statements_header = ["object id", "object name", "object type", "predicate name", "subject id", "subject name", "subject type"]
+	
+		if len(result)>0:
+			prefix = str(random.randint(100000,999999))
+			statements_pd = pd.DataFrame(result, columns=statements_header)
+			statements_object = iris_objects.IrisDataframe(data=statements_pd)
+			statements_name = 'statements_list_' + prefix
+			self.iris.add_to_env(statements_name, statements_object)
+
+			explanation = ['Total of ' + str(len(result)) + ' results. See table: ' + statements_name + " for more info", statements_object]
+		else:
+			return "No relationships found"
+		return explanation
+		# if len(result)> 0:
+		# 	statements_pd = pd.DataFrame(result, columns=["Concept 1", "Concept 2", "Relationship"])
+		# 	statements_object = iris_objects.IrisDataframe(data=statements_pd)
+	 #        self.iris.add_to_env(statements_name, statements_object)
+		
+		# else:
+		# 	return "No relationships found"
+
+
+_GNBR_STATEMENT_LIST = StatementInfoList()
 
 class StatementSimilarity(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
