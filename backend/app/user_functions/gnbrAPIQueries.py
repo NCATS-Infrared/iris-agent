@@ -15,6 +15,8 @@ import pandas as pd
 from collections import Counter
 import numpy as np
 
+from user_functions.find_id import FindID, SelectID, ProcessConceptID
+
 class LoadGNBR(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
 	title = "Start the biomedical data translator"
@@ -137,6 +139,22 @@ class TypesGNBR(IrisCommand):
 
 _GNBR_TYPES = TypesGNBR()
 
+class ClearVariables(IrisCommand):
+	title = "Clear variables"
+
+	examples = ["Remove variables"]
+	
+	# core logic of the command
+	def command(self):
+		if "variables" in self.iris.env:
+			for var_name in list(set(self.iris.env["variables"])):
+				self.iris.remove_from_env(var_name)
+			self.iris.remove_from_env("variables")
+			return "Current variables cleared"
+		else:
+			return "No variables to clear"
+
+ClearVariables = ClearVariables()
 
 class ConceptInfo(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
@@ -147,34 +165,38 @@ class ConceptInfo(IrisCommand):
 				"What can you tell me about {concept_id}?"]
 
 	# type annotations for each command argument, to help Iris collect missing values from a user
-	argument_types = {"concept_id":t.String("I need an id (ex. MESH:C561631) or a name (ex. furosemide).")}
+	argument_types = {"concept_id": t.YesNo("Do you have the concept id (ex. MESH:C561631)?",
+						yes=t.String("What is the id?"),
+						no=t.String("No worries, we'll help you find that! Just type 'next'"))}
 	
 	# core logic of the command
 	def command(self, concept_id):
-		api =  gnbrAPI.gnbrAPI()
-		cid = concept_id
-		# if ':' in concept_id:
-		concept_result = api.concept_detail(concept_id=cid)
-		statement_result = api.statement(s=[cid], relations="")
-		combined_result = [concept_result[0]]
-		for r in statement_result:
-			if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
-				strings = (r.object.type, r.predicate.name, r.subject.name)
-				combined_result.append((r.object.type, r.predicate.name, r.subject.name))
-				self.iris.add_to_env(' '.join(strings), 
-					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
-			else:
-				strings = (r.subject.name, r.predicate.name, r.object.type)
-				combined_result.append((r.subject.name, r.predicate.name, r.object.type))
-				self.iris.add_to_env(' '.join(strings), 
-					{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
-		return combined_result
-
+		# api =  gnbrAPI.gnbrAPI()
+		if concept_id != 'next':
+			self.iris.add_to_env("concept_id", concept_id)
+			result = ProcessConceptID()
+		else:
+			result = sm.DoAll([FindID(), SelectID(), ProcessConceptID()])
+		# concept_result = api.concept_detail(concept_id=cid)
+		# statement_result = api.statement(s=[cid], relations="")
+		# combined_result = [concept_result[0]]
+		# for r in statement_result:
+		# 	if 'Disease' in r.subject.type or 'Chemical' in r.object.type:
+		# 		strings = (r.object.type, r.predicate.name, r.subject.name)
+		# 		combined_result.append((r.object.type, r.predicate.name, r.subject.name))
+		# 		self.iris.add_to_env(' '.join(strings), 
+		# 			{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+		# 	else:
+		# 		strings = (r.subject.name, r.predicate.name, r.object.type)
+		# 		combined_result.append((r.subject.name, r.predicate.name, r.object.type))
+		# 		self.iris.add_to_env(' '.join(strings), 
+		# 			{'relation': r.predicate.name, 'type': r.object.type, 'concept': r.subject.id})
+		# return combined_result
+		return result
 	# wrap the output of a command to display to user
 	# by default this will be an identity function
 	# each element of the list defines a separate chat bubble
 	def explanation(self, result):
-
 		mentions_text = """
 {} ({})
 
@@ -263,7 +285,11 @@ class GetTypesRelatedToConcept(IrisCommand):
 		if self.iris.env['Workflow'] == 'treatment_sideeffects':
 			self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
 			self.iris.add_to_env('concept_id', concept_id)
-			self.iris.add_to_env('relationship', relationship)				
+			self.iris.add_to_env('relationship', relationship)
+			if "variables" not in self.iris.env:
+				self.iris.add_to_env("variables", ['relationship'])
+			else:
+				self.iris.env["variables"].append('relationship') 				
 		result = g.statement(s=[concept_id], relations=relationship)
 		processed_result = []
 		for r in result[:3]:
@@ -271,6 +297,12 @@ class GetTypesRelatedToConcept(IrisCommand):
 			# processed_result.append(r.object.id)
 			self.iris.add_to_env(r.id, r.id)
 			self.iris.add_to_env(r.object.name, (r.id, r.object.id))
+			if "variables" not in self.iris.env:
+				self.iris.add_to_env("variables", [r.id])
+				self.iris.env["variables"].append(r.object.name) 
+			else:
+				self.iris.env["variables"].append(r.id)
+				self.iris.env["variables"].append(r.object.name) 
 		return processed_result
 
 	def explanation(self, result):
@@ -502,7 +534,7 @@ class StatementInfo(IrisCommand):
 
 	# type annotations for each command argument, to help Iris collect missing values from a user
 	argument_types = {"statement_id":t.String("I need an id (ex. MESH:D013575).")}
-    
+	
 	# core logic of the command
 	def command(self, statement_id):
 		# api =  gnbrAPI.gnbrAPI()
@@ -553,6 +585,10 @@ class StatementInfo(IrisCommand):
 			statements_object = iris_objects.IrisDataframe(data=statements_pd)
 			statements_name = 'statements_' + statement_id_minus_mesh
 			self.iris.add_to_env(statements_name, statements_object)
+			if "variables" not in self.iris.env:
+				self.iris.add_to_env("variables", [statements_name])
+			else:
+				self.iris.env["variables"].append(statements_name)
 
 			explanation = ['Total of ' + str(num_results) + ' results. See table: ' + statements_name + " for more info", statements_object]
 		else:
@@ -597,6 +633,10 @@ class StatementInfoList(IrisCommand):
 			statements_object = iris_objects.IrisDataframe(data=statements_pd)
 			statements_name = 'statements_list_' + prefix
 			self.iris.add_to_env(statements_name, statements_object)
+			if "variables" not in self.iris.env:
+				self.iris.add_to_env("variables", [statements_name])
+			else:
+				self.iris.env["variables"].append(statements_name)
 
 			explanation = ['Total of ' + str(len(result)) + ' results. See table: ' + statements_name + " for more info", statements_object]
 		else:
@@ -623,7 +663,7 @@ class StatementSimilarity(IrisCommand):
 	# type annotations for each command argument, to help Iris collect missing values from a user
 	argument_types = {"statement1_id":t.String("I need an id (ex. ncbigene:7018)"), 
 					"statement2_id":t.String("I need another id (ex. ncbigene:4609)")}
-    
+	
 	# core logic of the command
 	def command(self, statement1_id, statement2_id):
 		# api =  gnbrAPI.gnbrAPI()
@@ -681,6 +721,10 @@ class StatementSimilarity(IrisCommand):
 		else:
 			jaccard_similarity = 0
 		self.iris.add_to_env("jaccard-" + statement1_id + "-" + statement2_id, jaccard_similarity)
+		if "variables" not in self.iris.env:
+			self.iris.add_to_env("variables", ["jaccard-" + statement1_id + "-" + statement2_id])
+		else:
+			self.iris.env["variables"].append("jaccard-" + statement1_id + "-" + statement2_id)
 		print(statement1_id, len(statements1))
 		print(statement2_id, len(statements2))
 		print(intersection_cardinality, 'intersection', union_cardinality, 'union')
