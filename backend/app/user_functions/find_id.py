@@ -193,13 +193,14 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		if self.iris.env['Workflow'] == 'treatment_sideeffects':
-			if 'workflow_path' in self.iris.env:
-				self.iris.env['workflow_path'].append(concept.id)
-			else:
-				self.iris.add_to_env('workflow_path', [concept.id])
-			processed_result = [processed_result]
-			processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
+		if 'Workflow' in self.iris.env:
+			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+				if 'workflow_path' in self.iris.env:
+					self.iris.env['workflow_path'].append(concept.id)
+				else:
+					self.iris.add_to_env('workflow_path', [concept.id])
+				processed_result = [processed_result]
+				processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
 		return processed_result
 
 _ProcessConceptID = ProcessConceptID()

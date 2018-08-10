@@ -242,13 +242,14 @@ https://www.n2t.net/{}
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
 		# add name to environment
-		if self.iris.env['Workflow'] == 'treatment_sideeffects':
-			if 'workflow_path' in self.iris.env:
-				self.iris.env['workflow_path'].append(concept.id)
-			else:
-				self.iris.add_to_env('workflow_path', [concept.id])
-			processed_result = [processed_result]
-			processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
+		if 'Workflow' in self.iris.env:
+			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+				if 'workflow_path' in self.iris.env:
+					self.iris.env['workflow_path'].append(concept.id)
+				else:
+					self.iris.add_to_env('workflow_path', [concept.id])
+				processed_result = [processed_result]
+				processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
@@ -282,14 +283,15 @@ class GetTypesRelatedToConcept(IrisCommand):
 		concept_id = args['concept']
 		relationship = relation_dict[ args['relation'] ]
 		types = args['type']
-		if self.iris.env['Workflow'] == 'treatment_sideeffects':
-			self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
-			self.iris.add_to_env('concept_id', concept_id)
-			self.iris.add_to_env('relationship', relationship)
-			if "variables" not in self.iris.env:
-				self.iris.add_to_env("variables", ['relationship'])
-			else:
-				self.iris.env["variables"].append('relationship') 				
+		if 'Workflow' in self.iris.env:
+			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+				self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
+		self.iris.add_to_env('concept_id', concept_id)
+		self.iris.add_to_env('relationship', relationship)
+		if "variables" not in self.iris.env:
+			self.iris.add_to_env("variables", ['relationship'])
+		else:
+			self.iris.env["variables"].append('relationship') 				
 		result = g.statement(s=[concept_id], relations=relationship)
 		processed_result = []
 		for r in result[:3]:
@@ -314,9 +316,8 @@ class GetTypesRelatedToConcept(IrisCommand):
 			for r in result:
 				txt = '{} ({})'.format(r[0],r[1])
 				processed_result.append(txt)
-			if self.iris.env['Workflow'] == 'treatment_sideeffects':
-				processed_result.append("To save results, enter command 'Save dataset'")
-				processed_result.append("To see evidence, enter command 'get evidence'")
+			processed_result.append("To save results, enter command 'Save dataset'")
+			processed_result.append("To see evidence, enter command 'get evidence'")
 			return processed_result
 		else:
 			return "No results were found"
@@ -420,8 +421,11 @@ class GetEvidence(IrisCommand):
 			for r in result[:3]:
 				text = r.label + "\n" + r.id
 				processed_result.append(text)
-			if self.iris.env['Workflow'] == 'treatment_sideeffects':
-				processed_result.append("To explore another relationship, type in 'Workflow two'")
+			if 'Workflow' in self.iris.env:
+				if self.iris.env['Workflow'] == 'treatment_sideeffects':
+					processed_result.append("To explore another relationship, type in 'Workflow two'")
+				elif workflow == "random_walk":
+					processed_result.append("To explore another relationship, type in 'Workflow two'")
 			return processed_result
 		else:
 			return 'No evidence found'
@@ -442,7 +446,16 @@ class SelectWorkflow(IrisCommand):
 
 	def command(self, workflow):
 		self.iris.add_to_env("Workflow", workflow)
-		return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one'"
+		if workflow == "treatment_sideeffects":
+			return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one'"
+		elif workflow == "random_walk":
+			diseases = {"fanconi anemia": "MESH:D005199", "thyroid disease": "MESH:D013959", "type II diabetes": "MESH:D003924",
+						"hyperglycinemia": "MESH:D020158", "liver disease": "MESH:D058625", "myocarditis": "MESH:D009205",
+						"multiple sclerosis": "MESH:D009103", "hepatitis B": "MESH:D006509", "eczema": "MESH:D004485"}
+			disease_name = random.choice(diseases.keys())
+			# disease_id = diseases[disease_name]
+			return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one' and use '" 
+			# + disease_id + "' to learn more about " + disease_name
 
 SelectWorkflow = SelectWorkflow()
 
