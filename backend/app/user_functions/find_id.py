@@ -21,6 +21,7 @@ from iris import iris_objects
 import pandas as pd
 from collections import Counter
 import numpy as np
+import random
 
 from user_functions.API import gnbrAPI
 from user_functions.API import BiolinksAPI
@@ -136,6 +137,12 @@ class ProcessConceptID(IrisCommand):
 					self.iris.add_to_env("variables", [' '.join(strings)])
 				else:
 					self.iris.env["variables"].append(' '.join(strings)) 
+				if 'Workflow' in self.iris.env:
+					if self.iris.env['Workflow'] == "random_walk":
+						if "random_relationships" not in self.iris.env:
+							self.iris.add_to_env("random_relationships", [' '.join(strings)])
+						else:
+							self.iris.env["random_relationships"].append(' '.join(strings))
 			else:
 				strings = (r.subject.name, r.predicate.name, r.object.type)
 				combined_result.append((r.subject.name, r.predicate.name, r.object.type))
@@ -145,6 +152,12 @@ class ProcessConceptID(IrisCommand):
 					self.iris.add_to_env("variables", [' '.join(strings)])
 				else:
 					self.iris.env["variables"].append(' '.join(strings)) 
+				if 'Workflow' in self.iris.env:
+					if self.iris.env['Workflow'] == "random_walk":
+						if "random_relationships" not in self.iris.env:
+							self.iris.add_to_env("random_relationships", [' '.join(strings)])
+						else:
+							self.iris.env["random_relationships"].append(' '.join(strings))
 		return combined_result
 
 	def explanation(self, result):
@@ -192,15 +205,18 @@ https://www.n2t.net/{}
 			# text += ' '.join(key).replace('_',' ') + ": " + str(round((num_results[key]/sum_results)*100,2)) + "%\n"
 			processed_result = mentions_text + statements_text + additionalinfo_text.format(concept.id)
 
-		# add name to environment
 		if 'Workflow' in self.iris.env:
-			if self.iris.env['Workflow'] == 'treatment_sideeffects':
-				if 'workflow_path' in self.iris.env:
-					self.iris.env['workflow_path'].append(concept.id)
-				else:
-					self.iris.add_to_env('workflow_path', [concept.id])
-				processed_result = [processed_result]
-				processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
+			if 'workflow_path' in self.iris.env:
+				self.iris.env['workflow_path'].append(concept.id)
+			else:
+				self.iris.add_to_env('workflow_path', [concept.id])
+			processed_result = [processed_result]
+			if self.iris.env['Workflow'] == 'drug_purpose' or self.iris.env['Workflow'] == "disease_treatment":
+				processed_result.append("To explore a specific relationship, enter command 'Explore concept statement'")
+			elif self.iris.env['Workflow'] == 'random_walk' and "random_relationships" in self.iris.env:
+				relationship = random.choice(self.iris.env["random_relationships"])
+				processed_result.append("To explore a specific relationship, enter command 'Explore concept statement'")
+				processed_result.append("Then, paste in this relationship '" + relationship + "'")
 		return processed_result
 
 _ProcessConceptID = ProcessConceptID()

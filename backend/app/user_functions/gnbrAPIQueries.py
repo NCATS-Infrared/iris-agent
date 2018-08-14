@@ -158,7 +158,7 @@ ClearVariables = ClearVariables()
 
 class ConceptInfo(IrisCommand):
 	# what iris will call the command + how it will appear in a hint
-	title = "Workflow one concept info {concept_id}?"
+	title = "Look up concept info for {concept_id}?"
 
 	# give an example for iris to recognize the command
 	examples = ["What info exists about {concept_id}?",
@@ -243,20 +243,20 @@ https://www.n2t.net/{}
 
 		# add name to environment
 		if 'Workflow' in self.iris.env:
-			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+			if self.iris.env['Workflow'] == 'drug_purpose' or self.iris.env['Workflow'] == "disease_treatment":
 				if 'workflow_path' in self.iris.env:
 					self.iris.env['workflow_path'].append(concept.id)
 				else:
 					self.iris.add_to_env('workflow_path', [concept.id])
 				processed_result = [processed_result]
-				processed_result.append("To explore a specific relationship, enter command 'Workflow Two'")
+				processed_result.append("To explore a specific relationship, enter command 'Explore concept statement'")
 		return processed_result
 
 _GNBR_CONCEPT = ConceptInfo()
 
 
 class GetTypesRelatedToConcept(IrisCommand):
-	title = "Workflow two concept_statement info {type_of_relationship}?"
+	title = "Explore concept statement info given {type_of_relationship}"
 
 	examples = ["What {type_of_relationship}?"]
 	argument_types = {"args": t.EnvVar(question="What is the types term?")}
@@ -284,27 +284,34 @@ class GetTypesRelatedToConcept(IrisCommand):
 		relationship = relation_dict[ args['relation'] ]
 		types = args['type']
 		if 'Workflow' in self.iris.env:
-			if self.iris.env['Workflow'] == 'treatment_sideeffects':
+			if self.iris.env['Workflow'] == 'drug_purpose' or self.iris.env['Workflow'] == "disease_treatment":
 				self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
 		self.iris.add_to_env('concept_id', concept_id)
 		self.iris.add_to_env('relationship', relationship)
+		self.iris.add_to_env('type', types)
 		if "variables" not in self.iris.env:
 			self.iris.add_to_env("variables", ['relationship'])
 		else:
-			self.iris.env["variables"].append('relationship') 				
+			self.iris.env["variables"].append('relationship')
+		self.iris.env["variables"].append('type') 				
 		result = g.statement(s=[concept_id], relations=relationship)
 		processed_result = []
-		for r in result[:3]:
-			processed_result.append((r.object.name, r.object.id))			
-			# processed_result.append(r.object.id)
-			self.iris.add_to_env(r.id, r.id)
-			self.iris.add_to_env(r.object.name, (r.id, r.object.id))
-			if "variables" not in self.iris.env:
-				self.iris.add_to_env("variables", [r.id])
-				self.iris.env["variables"].append(r.object.name) 
-			else:
-				self.iris.env["variables"].append(r.id)
-				self.iris.env["variables"].append(r.object.name) 
+		count = 0
+		for r in result:
+			if count >= 3:
+				break
+			if r.object.type == types:
+				processed_result.append((r.object.name, r.object.id))
+				count += 1			
+				# processed_result.append(r.object.id)
+				self.iris.add_to_env(r.id, r.id)
+				self.iris.add_to_env(r.object.name, (r.id, r.object.id))
+				if "variables" not in self.iris.env:
+					self.iris.add_to_env("variables", [r.id])
+					self.iris.env["variables"].append(r.object.name) 
+				else:
+					self.iris.env["variables"].append(r.id)
+					self.iris.env["variables"].append(r.object.name) 
 		return processed_result
 
 	def explanation(self, result):
@@ -422,10 +429,10 @@ class GetEvidence(IrisCommand):
 				text = r.label + "\n" + r.id
 				processed_result.append(text)
 			if 'Workflow' in self.iris.env:
-				if self.iris.env['Workflow'] == 'treatment_sideeffects':
-					processed_result.append("To explore another relationship, type in 'Workflow two'")
-				elif workflow == "random_walk":
-					processed_result.append("To explore another relationship, type in 'Workflow two'")
+				if self.iris.env['Workflow'] == 'drug_purpose':
+					processed_result.append("To explore another relationship, type in 'Explore concept statement'")
+				elif self.iris.env['Workflow'] == "random_walk":
+					processed_result.append("To explore another relationship, type in 'Explore concept statement'")
 			return processed_result
 		else:
 			return 'No evidence found'
@@ -440,21 +447,22 @@ class SelectWorkflow(IrisCommand):
 				"Choose {workflow}"]
 
 	argument_types = {"workflow": t.Select(question="Which workflow would you like to select?", options={
-						"Disease treatments and side effects": "treatment_sideeffects",
+						"Chemical/drug purpose and side effects": "drug_purpose",
 						"Random walk": "random_walk",
+						"Disease treatments": "disease_treatment",
 					})}
 
 	def command(self, workflow):
 		self.iris.add_to_env("Workflow", workflow)
-		if workflow == "treatment_sideeffects":
-			return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one'"
+		if workflow == "drug_purpose" or workflow == "disease_treatment":
+			return "Selected: " + workflow + "\n\nBegin by typing in 'Look up concept info'"
 		elif workflow == "random_walk":
 			diseases = {"fanconi anemia": "MESH:D005199", "thyroid disease": "MESH:D013959", "type II diabetes": "MESH:D003924",
 						"hyperglycinemia": "MESH:D020158", "liver disease": "MESH:D058625", "myocarditis": "MESH:D009205",
 						"multiple sclerosis": "MESH:D009103", "hepatitis B": "MESH:D006509", "eczema": "MESH:D004485"}
-			disease_name = random.choice(diseases.keys())
-			# disease_id = diseases[disease_name]
-			return "Selected: " + workflow + "\n\nBegin by typing in 'Workflow one' and use '" 
+			disease_name = random.choice(list(diseases))
+			disease_id = diseases[disease_name]
+			return ["Selected: " + workflow, "Begin by typing in 'Look up concept info' and use id '" + disease_id + "' for " + disease_name]
 			# + disease_id + "' to learn more about " + disease_name
 
 SelectWorkflow = SelectWorkflow()
@@ -468,9 +476,13 @@ class SaveDataset(IrisCommand):
 	def command(self):
 		g = gnbrAPI.gnbrAPI()
 		result = g.statement(s=[self.iris.env['concept_id']], relations=self.iris.env['relationship'])
+		processed_result = []
+		for r in result:
+			if r.object.type == self.iris.env['type']:
+				processed_result.append(r)
 		relationships = []
-		if len(result) > 0:
-			for r in result:
+		if len(processed_result) > 0:
+			for r in processed_result:
 				relationships.append(r.object.name)
 			if 'Dataset' in self.iris.env:
 				self.iris.env['Dataset'][self.iris.env['concept_id'] + " | " + r.predicate.name] = relationships
