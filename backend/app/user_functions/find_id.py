@@ -217,6 +217,7 @@ https://www.n2t.net/{}
 				relationship = random.choice(self.iris.env["random_relationships"])
 				processed_result.append("To explore a specific relationship, enter command 'Explore concept statement'")
 				processed_result.append("Then, paste in this relationship '" + relationship + "'")
+				self.iris.remove_from_env("random_relationships")
 		return processed_result
 
 _ProcessConceptID = ProcessConceptID()

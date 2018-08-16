@@ -256,7 +256,7 @@ _GNBR_CONCEPT = ConceptInfo()
 
 
 class GetTypesRelatedToConcept(IrisCommand):
-	title = "Explore concept statement info given {type_of_relationship}"
+	title = "Explore concept statement info given {type_of_relationship}?"
 
 	examples = ["What {type_of_relationship}?"]
 	argument_types = {"args": t.EnvVar(question="What is the types term?")}
@@ -284,7 +284,7 @@ class GetTypesRelatedToConcept(IrisCommand):
 		relationship = relation_dict[ args['relation'] ]
 		types = args['type']
 		if 'Workflow' in self.iris.env:
-			if self.iris.env['Workflow'] == 'drug_purpose' or self.iris.env['Workflow'] == "disease_treatment":
+			if self.iris.env['Workflow'] == 'drug_purpose' or self.iris.env['Workflow'] == "disease_treatment" or self.iris.env['Workflow'] == "random_walk":
 				self.iris.env['workflow_path'].append(args['relation'] + " " + args['type'])
 		self.iris.add_to_env('concept_id', concept_id)
 		self.iris.add_to_env('relationship', relationship)
@@ -312,6 +312,12 @@ class GetTypesRelatedToConcept(IrisCommand):
 				else:
 					self.iris.env["variables"].append(r.id)
 					self.iris.env["variables"].append(r.object.name) 
+				if 'Workflow' in self.iris.env:
+					if self.iris.env['Workflow'] == "random_walk":
+						if "random_objects" not in self.iris.env:
+							self.iris.add_to_env("random_objects", [(r.object.name, r.object.id)])
+						else:
+							self.iris.env["random_objects"].append((r.object.name, r.object.id))
 		return processed_result
 
 	def explanation(self, result):
@@ -325,6 +331,11 @@ class GetTypesRelatedToConcept(IrisCommand):
 				processed_result.append(txt)
 			processed_result.append("To save results, enter command 'Save dataset'")
 			processed_result.append("To see evidence, enter command 'get evidence'")
+			if 'Workflow' in self.iris.env:
+				if self.iris.env['Workflow'] == "random_walk" and "random_objects" in self.iris.env:
+					disease_name, disease_id = random.choice(self.iris.env["random_objects"])
+					processed_result.append("Next, try 'Look up concept info' and use id '" + disease_id + "' for " + disease_name)
+					self.iris.remove_from_env("random_objects")
 			return processed_result
 		else:
 			return "No results were found"
